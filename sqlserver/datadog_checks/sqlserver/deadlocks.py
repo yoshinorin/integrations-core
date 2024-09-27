@@ -11,7 +11,7 @@ from datadog_checks.base.utils.serialization import json
 from datadog_checks.base.utils.tracking import tracked_method
 from datadog_checks.sqlserver.config import SQLServerConfig
 from datadog_checks.sqlserver.const import STATIC_INFO_ENGINE_EDITION, STATIC_INFO_VERSION
-from datadog_checks.sqlserver.queries import DEADLOCK_QUERY, DEADLOCK_TIMESTAMP_ALIAS, DEADLOCK_XML_ALIAS
+from datadog_checks.sqlserver.queries import get_deadlocks_query, DEADLOCK_TIMESTAMP_ALIAS, DEADLOCK_XML_ALIAS
 
 try:
     import datadog_agent
@@ -106,12 +106,12 @@ class Deadlocks(DBMAsyncJob):
                 self._log.debug("collecting sql server deadlocks")
                 self._log.debug(
                     "Running query [%s] with max deadlocks %s and timestamp %s",
-                    DEADLOCK_QUERY,
+                    get_deadlocks_query(),
                     self._max_deadlocks,
                     self._last_deadlock_timestamp,
                 )
                 try:
-                    cursor.execute(DEADLOCK_QUERY, (self._max_deadlocks, self._get_lookback_seconds()))
+                    cursor.execute(get_deadlocks_query(), (self._max_deadlocks, self._get_lookback_seconds()))
                 except Exception as e:
                     if "Data column of Unknown ADO type" in str(e):
                         raise Exception(f"{str(e)} | cursor.description: {cursor.description}")

@@ -217,18 +217,23 @@ GROUP BY
 
 DEADLOCK_TIMESTAMP_ALIAS = "timestamp"
 DEADLOCK_XML_ALIAS = "event_xml"
-DEADLOCK_QUERY = f"""
-SELECT TOP(?) xdr.value('@timestamp', 'datetime') AS [{DEADLOCK_TIMESTAMP_ALIAS}],
-    xdr.query('.') AS [{DEADLOCK_XML_ALIAS}]
-FROM (SELECT CAST([target_data] AS XML) AS Target_Data
-            FROM sys.dm_xe_session_targets AS xt
-            INNER JOIN sys.dm_xe_sessions AS xs ON xs.address = xt.event_session_address
-            WHERE xs.name = N'system_health'
-              AND xt.target_name = N'ring_buffer'
-    ) AS XML_Data
-CROSS APPLY Target_Data.nodes('RingBufferTarget/event[@name="xml_deadlock_report"]') AS XEventData(xdr)
-WHERE xdr.value('@timestamp', 'datetime') >= DATEADD(SECOND, ?, GETDATE())
-;"""
+def get_deadlocks_query():
+    """
+    Construct the query to fetch deadlocks from the system_health extended event session
+    :return: The query to fetch deadlocks
+    """
+    return f"""
+    SELECT TOP(?) xdr.value('@timestamp', 'datetime') AS [{DEADLOCK_TIMESTAMP_ALIAS}],
+        xdr.query('.') AS [{DEADLOCK_XML_ALIAS}]
+    FROM (SELECT CAST([target_data] AS XML) AS Target_Data
+                FROM sys.dm_xe_session_targets AS xt
+                INNER JOIN sys.dm_xe_sessions AS xs ON xs.address = xt.event_session_address
+                WHERE xs.name = N'system_health'
+                AND xt.target_name = N'ring_buffer'
+        ) AS XML_Data
+    CROSS APPLY Target_Data.nodes('RingBufferTarget/event[@name="xml_deadlock_report"]') AS XEventData(xdr)
+    WHERE xdr.value('@timestamp', 'datetime') >= DATEADD(SECOND, ?, GETDATE())
+    ;"""
 
 
 def get_query_ao_availability_groups(sqlserver_major_version):
