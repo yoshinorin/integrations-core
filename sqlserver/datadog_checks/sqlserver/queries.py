@@ -217,14 +217,19 @@ GROUP BY
 
 DEADLOCK_TIMESTAMP_ALIAS = "timestamp"
 DEADLOCK_XML_ALIAS = "event_xml"
-def get_deadlocks_query():
+def get_deadlocks_query(convert_xml_to_str=False):
     """
     Construct the query to fetch deadlocks from the system_health extended event session
+    :param convert_xml_to_str: Whether to convert the XML to a string. This option is for MSOLEDB drivers
+        that can't convert XML to str.
     :return: The query to fetch deadlocks
     """
+    xml_expression = "xdr.query('.')"
+    if convert_xml_to_str:
+        xml_expression = "CAST(xdr.query('.') AS NVARCHAR(MAX))"
     return f"""
     SELECT TOP(?) xdr.value('@timestamp', 'datetime') AS [{DEADLOCK_TIMESTAMP_ALIAS}],
-        xdr.query('.') AS [{DEADLOCK_XML_ALIAS}]
+        {xml_expression} AS [{DEADLOCK_XML_ALIAS}]
     FROM (SELECT CAST([target_data] AS XML) AS Target_Data
                 FROM sys.dm_xe_session_targets AS xt
                 INNER JOIN sys.dm_xe_sessions AS xs ON xs.address = xt.event_session_address
