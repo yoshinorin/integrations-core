@@ -11,7 +11,7 @@ from datadog_checks.base.utils.serialization import json
 from datadog_checks.base.utils.tracking import tracked_method
 from datadog_checks.sqlserver.config import SQLServerConfig
 from datadog_checks.sqlserver.const import STATIC_INFO_ENGINE_EDITION, STATIC_INFO_VERSION
-from datadog_checks.sqlserver.queries import get_deadlocks_query, DEADLOCK_TIMESTAMP_ALIAS, DEADLOCK_XML_ALIAS
+from datadog_checks.sqlserver.queries import DEADLOCK_TIMESTAMP_ALIAS, DEADLOCK_XML_ALIAS, get_deadlocks_query
 
 try:
     import datadog_agent
@@ -41,6 +41,11 @@ class Deadlocks(DBMAsyncJob):
         self._max_deadlocks = config.deadlocks_config.get("max_deadlocks", MAX_DEADLOCKS)
         self._deadlock_payload_max_bytes = MAX_PAYLOAD_BYTES
         self.collection_interval = config.deadlocks_config.get("collection_interval", DEFAULT_COLLECTION_INTERVAL)
+        self._convert_xml_to_str = False
+        # MSOLEDB drivers don't properly support SQL Server XML data type,
+        # so we need to convert it to string before returning it to the Agent.
+        if self._check.connection is not None and self._check.connection.connector != "odbc":
+            self._convert_xml_to_str = True
         super(Deadlocks, self).__init__(
             check,
             run_sync=True,
