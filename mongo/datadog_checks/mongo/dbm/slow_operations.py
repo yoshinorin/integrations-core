@@ -165,7 +165,7 @@ class MongoSlowOperations(DBMAsyncJob):
                 try:
                     parsed_log = json_util.loads(parsed_log)
                 except Exception as e:
-                    self._check.log.error("Failed to parse log line: %s", e)
+                    self._check.log.error("Failed to parse log line: $s, error: %s", parsed_log, e)
                     continue
             if parsed_log.get("msg", "").lower() == 'slow query':
                 ts = parsed_log["t"].timestamp()
