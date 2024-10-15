@@ -84,7 +84,7 @@ class MongoDb(AgentCheck):
 
     def __init__(self, name, init_config, instances=None):
         super(MongoDb, self).__init__(name, init_config, instances)
-        self._config = MongoConfig(self.instance, self.log)
+        self._config = MongoConfig(self.instance, self.init_config, self.log)
 
         if 'server' in self.instance:
             self.warning('Option `server` is deprecated and will be removed in a future release. Use `hosts` instead.')
@@ -250,13 +250,16 @@ class MongoDb(AgentCheck):
             return []
         return [f"dd.internal.resource:database_instance:{self._resolved_hostname}"]
 
-    def _get_tags(self, include_internal_resource_tags=False):
+    def _get_tags(self, include_internal_resource_tags=False, include_service_tag=False):
         tags = deepcopy(self._config.metric_tags)
         tags.extend(self.deployment_type.deployment_tags)
         if include_internal_resource_tags:
             tags.extend(self.internal_resource_tags)
         if isinstance(self.deployment_type, ReplicaSetDeployment):
             tags.extend(self.deployment_type.replset_tags)
+        if include_service_tag and self._config.service_tag:
+            # The service tag should ONLY be included with raw events
+            tags.append(self._config.service_tag)
         return tags
 
     def _get_service_check_tags(self):
@@ -274,9 +277,15 @@ class MongoDb(AgentCheck):
 
             # DBM
             if self._config.dbm_enabled:
-                self._operation_samples.run_job_loop(tags=self._get_tags(include_internal_resource_tags=True))
-                self._slow_operations.run_job_loop(tags=self._get_tags(include_internal_resource_tags=True))
-                self._schemas.run_job_loop(tags=self._get_tags(include_internal_resource_tags=True))
+                self._operation_samples.run_job_loop(
+                    tags=self._get_tags(include_internal_resource_tags=True, include_service_tag=True)
+                )
+                self._slow_operations.run_job_loop(
+                    tags=self._get_tags(include_internal_resource_tags=True, include_service_tag=True)
+                )
+                self._schemas.run_job_loop(
+                    tags=self._get_tags(include_internal_resource_tags=True, include_service_tag=True)
+                )
         except CRITICAL_FAILURE as e:
             self.service_check(SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=self._config.service_check_tags)
             self._unset_metadata()
@@ -367,7 +376,7 @@ class MongoDb(AgentCheck):
         deployment = self.deployment_type
         if self._resolved_hostname not in self._database_instance_emitted:
             # DO NOT emit with internal resource tags, as the metadata event is used to CREATE the databse instance
-            tags = self._get_tags()
+            tags = self._get_tags(include_service_tag=True)
             mongodb_instance_metadata = {
                 "cluster_name": self._config.cluster_name,
                 "modules": self._mongo_modules,
