@@ -52,6 +52,7 @@ from .const import (
     SYNTHETIC_VARS,
     TABLE_ROWS_STATS_VARS,
     TABLE_VARS,
+    SYSTEM_TABLE_VARS,
     VARIABLES_VARS,
 )
 from .innodb_metrics import InnoDBMetrics
@@ -558,7 +559,7 @@ class MySql(AgentCheck):
                 results['information_table_data_size'].update(table_data_size)
             else:
                 results['information_table_data_size'] = table_data_size
-            metrics.update(TABLE_VARS)
+            metrics.update(SYSTEM_TABLE_VARS)
 
         if is_affirmative(self._config.options.get('replication', self._config.dbm_enabled)):
             if self.performance_schema_enabled and self._is_group_replication_active(db):

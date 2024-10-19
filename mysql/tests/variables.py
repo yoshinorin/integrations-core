@@ -58,7 +58,10 @@ TABLE_VARS = [
     'mysql.info.table.index_size',
     'mysql.info.table.data_size',
 ]
-
+SYSTEM_TABLE_VARS = {
+    'mysql.info.system_table.index_size',
+    'mysql.info.system_table.data_size',
+}
 ROW_TABLE_STATS_VARS = [
     'mysql.info.table.rows.read',
     'mysql.info.table.rows.changed',

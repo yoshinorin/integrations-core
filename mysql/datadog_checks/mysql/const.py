@@ -263,6 +263,10 @@ TABLE_VARS = {
     'information_table_index_size': ('mysql.info.table.index_size', GAUGE),
     'information_table_data_size': ('mysql.info.table.data_size', GAUGE),
 }
+SYSTEM_TABLE_VARS = {
+    'information_system_table_index_size': ('mysql.info.system_table.index_size', GAUGE),
+    'information_system_table_data_size': ('mysql.info.system_table.data_size', GAUGE),
+}
 
 TABLE_ROWS_STATS_VARS = {
     'information_table_rows_read_total': ('mysql.info.table.rows.read', MONOTONIC),

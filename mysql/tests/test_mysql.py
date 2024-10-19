@@ -161,6 +161,7 @@ def _assert_complex_config(aggregator, service_check_tags, metric_tags, hostname
         + variables.SYNTHETIC_VARS
         + variables.STATEMENT_VARS
         + variables.TABLE_VARS
+        + variables.SYSTEM_TABLE_VARS
         + variables.ROW_TABLE_STATS_VARS
     )
 
@@ -304,6 +305,7 @@ def test_complex_config_replica(aggregator, dd_run_check, instance_complex):
         + variables.SYNTHETIC_VARS
         + variables.STATEMENT_VARS
         + variables.TABLE_VARS
+        + variables.SYSTEM_TABLE_VARS
         + variables.ROW_TABLE_STATS_VARS
     )
 
