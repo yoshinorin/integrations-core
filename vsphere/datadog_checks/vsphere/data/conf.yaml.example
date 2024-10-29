@@ -267,6 +267,7 @@ instances:
     #   - cluster
     #   - storage_pod
     #   - vstorage_object_manager
+    #   - all
 
     ## @param include_events - list of mappings - optional
     ## The events that should be collected by the vSphere integration.

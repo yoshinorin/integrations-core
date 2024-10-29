@@ -297,6 +297,7 @@ files:
             - 'cluster'
             - 'storage_pod'
             - 'vstorage_object_manager'
+            - 'all'
           type: array
           display_default: ['vm', 'host']
           items:

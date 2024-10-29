@@ -179,6 +179,7 @@ class VSphereConfig(object):
             )
 
         all_valid_resource_types = list(MOR_TYPE_AS_STRING.values())
+        all_valid_resource_types.append('all')
         for resource_type in self.event_resource_filters:
             if resource_type not in all_valid_resource_types:
                 raise ConfigurationError(

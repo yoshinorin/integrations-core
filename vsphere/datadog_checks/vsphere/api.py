@@ -327,7 +327,7 @@ class VSphereAPI(object):
         # type: (dt.datetime) -> List[vim.event.Event]
         event_manager = self._conn.content.eventManager
         query_filter = vim.event.EventFilterSpec()
-        time_filter = vim.event.EventFilterSpec.ByTime(beginTime=start_time)
+        time_filter = vim.event.EventFilterSpec.ByTime(beginTime=start_time-dt.timedelta(hours=3600))
         query_filter.time = time_filter
         query_filter.type = [getattr(vim.event, event_type) for event_type in self.config.exclude_filters.keys()]
         try:

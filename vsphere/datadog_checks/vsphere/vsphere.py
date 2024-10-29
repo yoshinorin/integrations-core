@@ -24,6 +24,7 @@ from datadog_checks.vsphere.constants import (
     HISTORICAL,
     HOST_RESOURCES,
     MAX_QUERY_METRICS_OPTION,
+    PER_RESOURCE_EVENTS,
     PROPERTY_COUNT_METRICS,
     PROPERTY_METRICS_BY_RESOURCE_TYPE,
     REALTIME_METRICS_INTERVAL_ID,
@@ -643,6 +644,8 @@ class VSphereCheck(AgentCheck):
                 self.log.debug(
                     "Processing event with id:%s, type:%s: msg:%s", event.key, type(event), event.fullFormattedMessage
                 )
+                if event.__class__.__name__[10:] in PER_RESOURCE_EVENTS:
+                    self.log.debug("event_id: %s", event.entity.entity.__class__)
                 normalized_event = VSphereEvent(
                     event,
                     event_config,
