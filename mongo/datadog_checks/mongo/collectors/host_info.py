@@ -25,4 +25,4 @@ class HostInfoCollector(MongoCollector):
                 # The hostInfo command is not supported on MongoDB Atlas shared or serverless clusters.
                 self.log.debug('The hostInfo command is not supported on this version of MongoDB')
                 return
-            self.log.warning('Failed to collect host info: %s', e)
+            self.log.error('Failed to collect host info: %s', e)

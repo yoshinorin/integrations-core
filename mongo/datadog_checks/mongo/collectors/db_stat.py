@@ -2,6 +2,8 @@
 # All rights reserved
 # Licensed under a 3-clause BSD style license (see LICENSE)
 
+from pymongo.errors import OperationFailure
+
 from datadog_checks.mongo.collectors.base import MongoCollector
 from datadog_checks.mongo.common import MongosDeployment, ReplicaSetDeployment, StandaloneDeployment
 
@@ -33,15 +35,22 @@ class DbStatCollector(MongoCollector):
             return isinstance(deployment, (StandaloneDeployment, MongosDeployment)) or deployment.is_primary
 
     def collect(self, api):
-        db = api[self.db_name]
-        # Submit the metric
-        # Check if parameter dbstats_tag_dbname is true to include dbname as a tag
-        if self.dbstats_tag_dbname:
-            additional_tags = [
-                u"cluster:db:{0}".format(self.db_name),  # FIXME: 8.x, was kept for backward compatibility
-                u"db:{0}".format(self.db_name),
-            ]
-        else:
-            additional_tags = None
-        stats = {'stats': db.command({'dbStats': 1, 'freeStorage': 1})}
-        return self._submit_payload(stats, additional_tags)
+        try:
+            db = api[self.db_name]
+            # Submit the metric
+            # Check if parameter dbstats_tag_dbname is true to include dbname as a tag
+            if self.dbstats_tag_dbname:
+                additional_tags = [
+                    u"cluster:db:{0}".format(self.db_name),  # FIXME: 8.x, was kept for backward compatibility
+                    u"db:{0}".format(self.db_name),
+                ]
+            else:
+                additional_tags = None
+            stats = {'stats': db.command({'dbStats': 1, 'freeStorage': 1})}
+            return self._submit_payload(stats, additional_tags)
+        except OperationFailure as e:
+            if e.code == 8000:
+                # The dbStats command is not supported on MongoDB Atlas shared or serverless clusters.
+                self.log.debug("The dbStats command is not supported on this version of MongoDB")
+                return
+            self.log.error("Failed to collect db stats for '%s': %s", self.db_name, e)
