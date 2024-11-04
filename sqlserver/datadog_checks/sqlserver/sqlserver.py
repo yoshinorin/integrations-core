@@ -166,6 +166,9 @@ class SQLServer(AgentCheck):
 
         self._schemas = Schemas(self, self._config)
 
+        # azure sql database instance, i.e. servername/database
+        self._azure_sql_database_instance = None
+
     def cancel(self):
         self.statement_metrics.cancel()
         self.procedure_metrics.cancel()
@@ -227,7 +230,7 @@ class SQLServer(AgentCheck):
                 # azure sql databases have a special format, which is set for DBM
                 # customers in the resolved_hostname.
                 # If user is not DBM customer, the resource_name should just be set to the `name`
-                db_instance = self._resolved_hostname
+                db_instance = self._azure_sql_database_instance
             # some `deployment_type`s map to multiple `resource_type`s
             resource_types = AZURE_DEPLOYMENT_TYPE_TO_RESOURCE_TYPES.get(deployment_type).split(",")
             for r_type in resource_types:
@@ -267,10 +270,17 @@ class SQLServer(AgentCheck):
                     azure_server_suffix = ".database.windows.net"
                     if host.endswith(azure_server_suffix):
                         host = host[: -len(azure_server_suffix)]
-                    # for Azure SQL Database, each database on a given "server" has isolated compute resources,
-                    # meaning that the agent is only able to see query activity for the specific database it's
-                    # connected to. For this reason, each Azure SQL database is modeled as an independent host.
-                    self._resolved_hostname = "{}/{}".format(host, configured_database)
+                    self._azure_sql_database_instance = "{}/{}".format(host, configured_database)
+                    if self._config.group_azure_sql_databases:
+                        # if the group_azure_sql_databases option is set, we group all databases on the same server
+                        # under the same host. This impacts the way we tag metrics and samples, as well as how database 
+                        # is visualized in the DBM UI.
+                        self._resolved_hostname = host
+                    else:
+                        # for Azure SQL Database, each database on a given "server" has isolated compute resources,
+                        # meaning that the agent is only able to see query activity for the specific database it's
+                        # connected to. For this reason, each Azure SQL database is modeled as an independent host.
+                        self._resolved_hostname = self._azure_sql_database_instance
         # set resource tags to properly tag with updated hostname
         self.set_resource_tags()
 
@@ -323,6 +333,7 @@ class SQLServer(AgentCheck):
             # after it's loaded
             if engine_edition_reloaded:
                 self._resolved_hostname = None
+                self._azure_sql_database_instance = None
             self.set_resolved_hostname()
 
     def debug_tags(self):

@@ -71,6 +71,12 @@ files:
         and can be useful to set a custom hostname when connecting to a remote database through a proxy.
       value:
         type: string
+    - name: group_azure_sql_databases
+      description: |
+        Group multiple databases together to report metrics and samples under a single database hostname.
+      value:
+        type: boolean
+        example: false
     - name: database_autodiscovery
       description: |
         Auto-discover and monitor databases. Supported for the metrics check.
