@@ -410,6 +410,7 @@ class SparkCheck(AgentCheck):
                 tags = ['app_name:%s' % str(app_name)]
                 tags.extend(addl_tags)
                 tags.append('status:%s' % str(status).lower())
+                tags.append('app_id:%s' % str(app_id))
 
                 job_id = job.get('jobId')
                 if job_id is not None:
