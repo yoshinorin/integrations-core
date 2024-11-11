@@ -441,6 +441,7 @@ class SparkCheck(AgentCheck):
                 tags = ['app_name:%s' % str(app_name)]
                 tags.extend(addl_tags)
                 tags.append('status:%s' % str(status).lower())
+                tags.append('app_id:%s' % str(app_id))
 
                 stage_id = stage.get('stageId')
                 if stage_id is not None:
@@ -462,6 +463,7 @@ class SparkCheck(AgentCheck):
 
             tags = ['app_name:%s' % str(app_name)]
             tags.extend(addl_tags)
+            tags.append('app_id:%s' % str(app_id))
 
             for executor in response:
                 if executor.get('id') == 'driver':
@@ -492,6 +494,7 @@ class SparkCheck(AgentCheck):
 
             tags = ['app_name:%s' % str(app_name)]
             tags.extend(addl_tags)
+            tags.append('app_id:%s' % str(app_id))
 
             for rdd in response:
                 self._set_metrics_from_json(tags, rdd, SPARK_RDD_METRICS)
@@ -512,6 +515,7 @@ class SparkCheck(AgentCheck):
                 self.log.debug('streaming/statistics: %s', response)
                 tags = ['app_name:%s' % str(app_name)]
                 tags.extend(addl_tags)
+                tags.append('app_id:%s' % str(app_id))
 
                 # NOTE: response is a dict
                 self._set_metrics_from_json(tags, response, SPARK_STREAMING_STATISTICS_METRICS)
