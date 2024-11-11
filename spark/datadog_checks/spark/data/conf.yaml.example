@@ -155,6 +155,11 @@ instances:
     #
     # disable_spark_stage_metrics: true
 
+    ## @param enable_app_id_tags - boolean - optional - default: false
+    ## Enable to start submitting App ID as the tag `app_id`.
+    #
+    # enable_app_id_tags: false
+
     ## @param proxy - mapping - optional
     ## This overrides the `proxy` setting in `init_config`.
     ##

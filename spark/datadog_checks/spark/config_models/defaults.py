@@ -44,6 +44,10 @@ def instance_empty_default_hostname():
     return False
 
 
+def instance_enable_app_id_tags():
+    return False
+
+
 def instance_enable_query_name_tag():
     return False
 
