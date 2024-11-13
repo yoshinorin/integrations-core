@@ -553,12 +553,6 @@ class Connection(object):
                     "please remove `username` and `password` from your instance config to use"
                     "AD Authentication with a Managed Identity"
                 )
-            # client_id is used as the user id for managed user identities or server principals
-            if not self.managed_identity_client_id:
-                raise ConfigurationError(
-                    "Azure Managed Identity Authentication is not properly configured "
-                    "missing required property, client_id"
-                )
 
         if self.connector == 'adodbapi':
             other_connector = 'odbc'
