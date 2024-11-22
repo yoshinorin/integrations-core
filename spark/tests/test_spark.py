@@ -1131,6 +1131,47 @@ def test_disable_legacy_cluster_tags(aggregator, dd_run_check):
 
         assert aggregator.metrics_asserted_pct == 100.0
 
+@pytest.mark.unit
+def test_enable_app_id_tags(aggregator, dd_run_check):
+    instance = STANDALONE_CONFIG
+    instance['enable_app_id_tags'] = True
+
+    with mock.patch('requests.get', standalone_requests_get_mock):
+        c = SparkCheck('spark', {}, [instance])
+        dd_run_check(c)
+
+        _assert(
+            aggregator,
+            [
+                # Check the running job metrics
+                (SPARK_JOB_RUNNING_METRIC_VALUES, SPARK_JOB_RUNNING_METRIC_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the succeeded job metrics
+                (SPARK_JOB_SUCCEEDED_METRIC_VALUES, SPARK_JOB_SUCCEEDED_METRIC_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the running stage metrics
+                (SPARK_STAGE_RUNNING_METRIC_VALUES, SPARK_STAGE_RUNNING_METRIC_TAGS + ["app_id:"+SPARK_APP_ID]),
+                 # Check the complete stage metrics
+                (SPARK_STAGE_COMPLETE_METRIC_VALUES, SPARK_STAGE_COMPLETE_METRIC_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the executor level metrics
+                (SPARK_EXECUTOR_LEVEL_METRIC_VALUES, SPARK_EXECUTOR_LEVEL_METRIC_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the optional executor level metrics
+                (SPARK_EXECUTOR_LEVEL_OPTIONAL_PROCESS_TREE_METRIC_VALUES, SPARK_EXECUTOR_LEVEL_METRIC_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the executor metrics
+                (SPARK_EXECUTOR_METRIC_VALUES, COMMON_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the optional summary executor metrics
+                (SPARK_EXECUTOR_OPTIONAL_METRIC_VALUES, COMMON_TAGS + ["app_id:"+SPARK_APP_ID]),
+                 # Check the driver metrics
+                (SPARK_DRIVER_METRIC_VALUES, COMMON_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the optional driver metrics
+                (SPARK_DRIVER_OPTIONAL_METRIC_VALUES, COMMON_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the RDD metrics
+                (SPARK_RDD_METRIC_VALUES, COMMON_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the streaming statistics metrics
+                (SPARK_STREAMING_STATISTICS_METRIC_VALUES, COMMON_TAGS + ["app_id:"+SPARK_APP_ID]),
+                # Check the structured streaming metrics
+                (SPARK_STRUCTURED_STREAMING_METRIC_VALUES, COMMON_TAGS),
+            ],
+        )
+
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
