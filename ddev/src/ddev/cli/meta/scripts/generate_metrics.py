@@ -66,6 +66,28 @@ def generate_metrics(app: Application, integration: str, site: str, api_key: str
     overriden_values = {
         'ray.worker.register_time.sum': [10, 9, 8],
     }
+    model_tag = [['model_name:"facebook/opt-125m"'], ['model_name:"mistralai/Mistral-7B-v0.1"']]
+    metrics_with_tagsets = {
+        'vllm.avg.generation_throughput.toks_per_s': model_tag,
+        'vllm.avg.prompt.throughput.toks_per_s': model_tag,
+        'vllm.cpu_cache_usage_perc': model_tag,
+        'vllm.e2e_request_latency.seconds.count': model_tag,
+        'vllm.e2e_request_latency.seconds.sum': model_tag,
+        'vllm.gpu_cache_usage_perc': model_tag,
+        'vllm.num_requests.running': model_tag,
+        'vllm.num_requests.swapped': model_tag,
+        'vllm.num_requests.waiting': model_tag,
+        'vllm.request.generation_tokens.count': model_tag,
+        'vllm.request.generation_tokens.sum': model_tag,
+        'vllm.request.success.count': model_tag,
+        'vllm.time_per_output_token.seconds.count': model_tag,
+        'vllm.time_per_output_token.seconds.sum': model_tag,
+        'vllm.time_to_first_token.seconds.count': model_tag,
+        'vllm.time_to_first_token.seconds.sum': model_tag,
+        'vllm.python.gc.objects.collected.count': [['generation:0'], ['generation:1'], ['generation:2']],
+        'vllm.python.gc.objects.uncollectable.count': [['generation:0'], ['generation:1'], ['generation:2']],
+        'vllm.python.gc.collections.count': [['generation:0'], ['generation:1'], ['generation:2']],
+    }
 
     with ApiClient(configuration) as api_client:
         api_instance = MetricsApi(api_client)
@@ -74,36 +96,39 @@ def generate_metrics(app: Application, integration: str, site: str, api_key: str
         while True:
             series = []
             for metric in intg.metrics:
-                value = (
-                    overriden_values[metric.metric_name][loop % len(overriden_values[metric.metric_name])]
-                    if metric.metric_name in overriden_values
-                    else random.randint(0, 100)
-                )
                 type = (
                     MetricIntakeType.GAUGE
                     if metric.metric_type == 'gauge'
                     else MetricIntakeType.COUNT if metric.metric_type == 'counter' else MetricIntakeType.UNSPECIFIED
                 )
-                app.display_info(f"Metric {metric.metric_name} with value {value} and type {type}")
-
-                series.append(
-                    MetricSeries(
-                        metric=metric.metric_name,
-                        type=type,
-                        points=[
-                            MetricPoint(
-                                timestamp=int(datetime.now().timestamp()),
-                                value=value,
-                            ),
-                        ],
-                        resources=[
-                            MetricResource(
-                                name=get_hostname(),
-                                type="host",
-                            ),
-                        ],
+                for tagset in metrics_with_tagsets.get(metric.metric_name, [[]]):
+                    value = (
+                        overriden_values[metric.metric_name][loop % len(overriden_values[metric.metric_name])]
+                        if metric.metric_name in overriden_values
+                        else random.randint(0, 100)
                     )
-                )
+                    app.display_info(
+                        f"Metric {metric.metric_name} with value {value} and type {type} and tags {tagset}"
+                    )
+                    series.append(
+                        MetricSeries(
+                            metric=metric.metric_name,
+                            type=type,
+                            tags=tagset,
+                            points=[
+                                MetricPoint(
+                                    timestamp=int(datetime.now().timestamp()),
+                                    value=value,
+                                ),
+                            ],
+                            resources=[
+                                MetricResource(
+                                    name=get_hostname(),
+                                    type="host",
+                                ),
+                            ],
+                        )
+                    )
             app.display_info("Calling the API...")
             api_instance.submit_metrics(body=MetricPayload(series=series))
             app.display_info("Done.")
