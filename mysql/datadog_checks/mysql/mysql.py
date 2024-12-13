@@ -293,12 +293,14 @@ class MySql(AgentCheck):
                     aurora_tags = self._get_runtime_aurora_tags(db)
                     duration = int((datetime.now() - start_time).total_seconds() * 1000)
                     self.gauge('dd.mysql.get_runtime_aurora_tags.duration', duration, self.tags)
+                    self.gauge('dd.mysql.get_runtime_aurora_tags.len', len(aurora_tags), self.tags)
 
                     start_time = datetime.now()
                     self.tags = tags + aurora_tags
                     self._non_internal_tags = self._set_database_instance_tags(aurora_tags)
                     duration = int((datetime.now() - start_time).total_seconds() * 1000)
                     self.gauge('dd.mysql.set_database_instance_tags.duration', duration, self.tags)
+                    self.gauge('dd.mysql.set_database_instance_tags.len', len(self._non_internal_tags), self.tags)
 
                 # version collection
                 self.version = get_version(db)
