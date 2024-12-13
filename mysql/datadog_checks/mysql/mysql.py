@@ -5,6 +5,7 @@
 from __future__ import division
 
 import copy
+from datetime import datetime
 import time
 import traceback
 from collections import defaultdict
@@ -283,10 +284,21 @@ class MySql(AgentCheck):
                 self._conn = db
 
                 # Update tag set with relevant information
+                start_time = datetime.now()
                 if self._get_is_aurora(db):
+                    duration = int((datetime.now() - start_time).total_seconds() * 1000)
+                    self.gauge('dd.mysql.get_is_aurora.duration', duration, self.tags)
+
+                    start_time = datetime.now()
                     aurora_tags = self._get_runtime_aurora_tags(db)
+                    duration = int((datetime.now() - start_time).total_seconds() * 1000)
+                    self.gauge('dd.mysql.get_runtime_aurora_tags.duration', duration, self.tags)
+
+                    start_time = datetime.now()
                     self.tags = tags + aurora_tags
                     self._non_internal_tags = self._set_database_instance_tags(aurora_tags)
+                    duration = int((datetime.now() - start_time).total_seconds() * 1000)
+                    self.gauge('dd.mysql.set_database_instance_tags.duration', duration, self.tags)
 
                 # version collection
                 self.version = get_version(db)
