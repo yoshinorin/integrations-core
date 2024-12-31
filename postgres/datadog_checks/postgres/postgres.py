@@ -119,6 +119,7 @@ class PostgreSql(AgentCheck):
         self._config = PostgresConfig(self.instance, self.init_config, self)
         self.cloud_metadata = self._config.cloud_metadata
         self.tags = self._config.tags
+        self.add_core_tags()
         # Keep a copy of the tags without the internal resource tags so they can be used for paths that don't
         # go through the agent internal metrics submission processing those tags
         self._non_internal_tags = copy.deepcopy(self.tags)
@@ -168,9 +169,11 @@ class PostgreSql(AgentCheck):
         )
         return discovery
 
-    def set_resource_tags(self):
+    def add_core_tags(self):
         self.tags.append("database_hostname:{}".format(self.database_hostname))
+        self.tags.append("database_identifier:{}".format(self.database_identifier))
 
+    def set_resource_tags(self):
         if self.cloud_metadata.get("gcp") is not None:
             self.tags.append(
                 "dd.internal.resource:gcp_sql_database_instance:{}:{}".format(
@@ -454,6 +457,11 @@ class PostgreSql(AgentCheck):
         return self.is_aurora
 
     @property
+    def reported_hostname(self):
+        # type: () -> str
+        return self.resolved_hostname
+
+    @property
     def resolved_hostname(self):
         # type: () -> str
         if self._resolved_hostname is None:
@@ -462,6 +470,15 @@ class PostgreSql(AgentCheck):
             else:
                 self._resolved_hostname = self.resolve_db_host()
         return self._resolved_hostname
+
+    @property
+    def database_identifier(self):
+        # type: () -> str
+        config_identifier = self._config.get('database_identifier', {}).get('identifier')
+        if config_identifier:
+            return config_identifier
+        include_port = self._config.get('database_identifier', {}).get('include_port', False)
+        return "{}{}".format(self.resolved_hostname, "." + self._config.port if include_port else "")
 
     def set_resolved_hostname_metadata(self):
         """
@@ -923,6 +940,7 @@ class PostgreSql(AgentCheck):
                 "host": self.resolved_hostname,
                 "port": self._config.port,
                 "database_hostname": self.database_hostname,
+                "database_identifier": self.database_identifier,
                 "agent_version": datadog_agent.get_version(),
                 "dbms": "postgres",
                 "kind": "database_instance",

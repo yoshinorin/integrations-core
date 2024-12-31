@@ -53,7 +53,8 @@ files:
       value:
         type: string
     - name: database_identifier
-      description: Controls how the database is identified. If reported_hostname is set, these options will be ignored.
+      description: Controls how the database is identified. The default value is the hostname for the instance, which
+        respects the `reported_hostname` option.
       options:
         - name: include_port
           value: boolean
