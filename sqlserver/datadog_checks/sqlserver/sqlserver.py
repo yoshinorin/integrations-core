@@ -197,7 +197,7 @@ class SQLServer(AgentCheck):
             self,
             queries=queries,
             tags=tags,
-            hostname=self.resolved_hostname,
+            hostname=self.reported_hostname,
             track_operation_time=track_operation_time,
         )
 
@@ -739,7 +739,7 @@ class SQLServer(AgentCheck):
             if self._query_manager is None:
                 # use QueryManager to process custom queries
                 self._query_manager = QueryManager(
-                    self, self.execute_query_raw, tags=self.tags, hostname=self.resolved_hostname
+                    self, self.execute_query_raw, tags=self.tags, hostname=self.reported_hostname
                 )
                 self._query_manager.compile_queries()
             self._send_database_instance_metadata()

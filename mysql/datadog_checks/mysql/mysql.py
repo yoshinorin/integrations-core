@@ -380,7 +380,7 @@ class MySql(AgentCheck):
             self.execute_query_raw,
             self,
             queries=queries,
-            hostname=self.resolved_hostname,
+            hostname=self.reported_hostname,
             track_operation_time=True,
         )
 
@@ -475,12 +475,12 @@ class MySql(AgentCheck):
             self.log.debug("Connected to MySQL")
             self.service_check_tags = list(set(service_check_tags))
             self.service_check(
-                self.SERVICE_CHECK_NAME, AgentCheck.OK, tags=service_check_tags, hostname=self.resolved_hostname
+                self.SERVICE_CHECK_NAME, AgentCheck.OK, tags=service_check_tags, hostname=self.reported_hostname
             )
             yield db
         except Exception:
             self.service_check(
-                self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=service_check_tags, hostname=self.resolved_hostname
+                self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=service_check_tags, hostname=self.reported_hostname
             )
             raise
         finally:
@@ -804,20 +804,20 @@ class MySql(AgentCheck):
             name=self.SLAVE_SERVICE_CHECK_NAME,
             value=1 if status == AgentCheck.OK else 0,
             tags=self.tags + additional_tags,
-            hostname=self.resolved_hostname,
+            hostname=self.reported_hostname,
         )
         # deprecated in favor of service_check("mysql.replication.replica_running")
         self.service_check(
             self.SLAVE_SERVICE_CHECK_NAME,
             status,
             tags=self.service_check_tags + additional_tags,
-            hostname=self.resolved_hostname,
+            hostname=self.reported_hostname,
         )
         self.service_check(
             self.REPLICA_SERVICE_CHECK_NAME,
             status,
             tags=self.service_check_tags + additional_tags,
-            hostname=self.resolved_hostname,
+            hostname=self.reported_hostname,
         )
 
     def _is_source_host(self, replicas, results):
@@ -866,13 +866,13 @@ class MySql(AgentCheck):
                     metric_tags.append(tag)
             if value is not None:
                 if metric_type == RATE:
-                    self.rate(metric_name, value, tags=metric_tags, hostname=self.resolved_hostname)
+                    self.rate(metric_name, value, tags=metric_tags, hostname=self.reported_hostname)
                 elif metric_type == GAUGE:
-                    self.gauge(metric_name, value, tags=metric_tags, hostname=self.resolved_hostname)
+                    self.gauge(metric_name, value, tags=metric_tags, hostname=self.reported_hostname)
                 elif metric_type == COUNT:
-                    self.count(metric_name, value, tags=metric_tags, hostname=self.resolved_hostname)
+                    self.count(metric_name, value, tags=metric_tags, hostname=self.reported_hostname)
                 elif metric_type == MONOTONIC:
-                    self.monotonic_count(metric_name, value, tags=metric_tags, hostname=self.resolved_hostname)
+                    self.monotonic_count(metric_name, value, tags=metric_tags, hostname=self.reported_hostname)
 
     def _collect_dict(self, metric_type, field_metric_map, query, db, tags):
         """
@@ -899,15 +899,15 @@ class MySql(AgentCheck):
                                 self.log.debug("Collecting done, value %s", result[col_idx])
                                 if metric_type == GAUGE:
                                     self.gauge(
-                                        metric, float(result[col_idx]), tags=tags, hostname=self.resolved_hostname
+                                        metric, float(result[col_idx]), tags=tags, hostname=self.reported_hostname
                                     )
                                 elif metric_type == RATE:
                                     self.rate(
-                                        metric, float(result[col_idx]), tags=tags, hostname=self.resolved_hostname
+                                        metric, float(result[col_idx]), tags=tags, hostname=self.reported_hostname
                                     )
                                 else:
                                     self.gauge(
-                                        metric, float(result[col_idx]), tags=tags, hostname=self.resolved_hostname
+                                        metric, float(result[col_idx]), tags=tags, hostname=self.reported_hostname
                                     )
                             else:
                                 self.log.debug("Received value is None for index %d", col_idx)
@@ -951,10 +951,10 @@ class MySql(AgentCheck):
                     scpu = proc.cpu_times()[1]
 
                     if ucpu and scpu:
-                        self.rate("mysql.performance.user_time", ucpu, tags=tags, hostname=self.resolved_hostname)
+                        self.rate("mysql.performance.user_time", ucpu, tags=tags, hostname=self.reported_hostname)
                         # should really be system_time
-                        self.rate("mysql.performance.kernel_time", scpu, tags=tags, hostname=self.resolved_hostname)
-                        self.rate("mysql.performance.cpu_time", ucpu + scpu, tags=tags, hostname=self.resolved_hostname)
+                        self.rate("mysql.performance.kernel_time", scpu, tags=tags, hostname=self.reported_hostname)
+                        self.rate("mysql.performance.cpu_time", ucpu + scpu, tags=tags, hostname=self.reported_hostname)
                 else:
                     self.log.debug("psutil is not available, will not collect mysql.performance.* metrics")
             except Exception:

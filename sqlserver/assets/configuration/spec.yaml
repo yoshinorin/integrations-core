@@ -32,13 +32,6 @@ files:
 
       Note: All '%' characters must be escaped as '%%'.
     options:
-    - name: empty_default_hostname
-      description: |
-        Set to `true` to disable the default hostname tag. This is useful when the check is monitoring a host
-        that does not have a running Datadog agent, for example, cloud hosts or containers.
-      value:
-        type: boolean
-        example: false
     - name: host
       description: |
         Host and port of your SQL server. If a port is ommitted, a default port of 1433 will be used.
