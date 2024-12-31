@@ -69,8 +69,6 @@ files:
       description: |
         Set the reported hostname for this instance. This value overrides the hostname detected by the Agent
         and can be useful to set a custom hostname when connecting to a remote database through a proxy.
-
-        This option is deprecated. Please use database_identifier.hostname instead.
       value:
         type: string
     - name: database_identifier
@@ -84,14 +82,11 @@ files:
             
             Use this option if runnining multiple instances on one host.
           default: false
-        - name: hostname
+        - name: identifier
           value: string
           description: |
-            The hostname to use in the database identifier. If not set, the hostname is detected by the Agent.
-            This value overrides the hostname detected by the Agent and can be useful to set a custom hostname
-            when connecting to a remote database through a proxy.
-            
-            This value will also be used for the host tag for all metrics and events.
+            Override the default database identifier. Use this only for backwards compatibility with previous
+            usage of reported_hostname.
     - name: database_autodiscovery
       description: |
         Auto-discover and monitor databases. Supported for the metrics check.
