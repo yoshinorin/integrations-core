@@ -1,6 +1,8 @@
 ---
 .build-agent-tpl:
   image: alpine:latest
+  tags:
+    - runner:docker
   variables:
     _AGENT_BRANCH: main # Used only by this job
     # Pass these to triggered agent build job.
