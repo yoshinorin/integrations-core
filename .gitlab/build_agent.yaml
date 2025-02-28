@@ -12,7 +12,7 @@
     RUN_KITCHEN_TESTS: "false"
     RUN_E2E_TESTS: "off"
   stage: build
-  script: echo "Check Agent Branch: ${_AGENT_BRANCH}"
+  script: echo "Check Agent Branch ${_AGENT_BRANCH}"
   # trigger:
   #   project: DataDog/datadog-agent
   #   branch: ${_AGENT_BRANCH}
