@@ -7,7 +7,8 @@ GLUSTER_VERSION = os.getenv('GLUSTER_VERSION')
 
 CHECK = 'glusterfs'
 INSTANCE = {'use_sudo': False}
-E2E_INIT_CONFIG = {'gstatus_path': 'docker exec gluster-node-1 gstatus'}
+# E2E_INIT_CONFIG = {'gstatus_path': 'docker exec gluster-node-1 gstatus'}
+E2E_INIT_CONFIG = { 'gstatus_path': "/opt/datadog-agent/embedded/bin/gstatus" }
 CONFIG = {'init_config': E2E_INIT_CONFIG, 'instances': [INSTANCE]}
 
 EXPECTED_METRICS = [

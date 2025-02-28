@@ -18,9 +18,15 @@ HOST = get_docker_hostname()
 E2E_METADATA = {
     'start_commands': [
         'apt-get update',
-        'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y docker.io',
+        # 'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y git',
+        # 'apt install -y software-properties-common',
+        # 'add-apt-repository ppa:gluster/glusterfs-7',
+        # 'apt update',
     ],
+    # 'docker_volumes': ['./docker/gluster_run/glusterd.socket:/var/run/glusterd.socket'],
     'docker_volumes': ['/var/run/docker.sock:/var/run/docker.sock'],
+    'env_vars': {'LOG_LEVEL': 'DEBUG'},
+
 }
 
 
@@ -29,8 +35,8 @@ def dd_environment():
     compose_file = os.path.join(HERE, 'docker', 'docker-compose.yaml')
     with docker_run(
         compose_file=compose_file,
-        conditions=[WaitFor(create_volume)],
-        down=delete_volume,
+        # conditions=[WaitFor(create_volume)],
+        # down=delete_volume,
     ):
         yield CONFIG, E2E_METADATA
 
@@ -59,12 +65,12 @@ def create_volume():
     # The image for some reason doesn't actually start glusterd. So the below two lines will start it manually.
     # Tried also adding the command to the Dockerfile, but that didn't work either. So leaving this here for now.
     run_command(
-        "docker exec gluster-node-2 /usr/sbin/glusterd -p /var/run/glusterd.pid --log-level INFO",
+        "docker exec gluster-node-2 /usr/sbin/glusterd -p /var/run/glusterd.pid --log-level DEBUG",
         capture=True,
         check=False,
     )
     run_command(
-        "docker exec gluster-node-1 /usr/sbin/glusterd -p /var/run/glusterd.pid --log-level INFO",
+        "docker exec gluster-node-1 /usr/sbin/glusterd -p /var/run/glusterd.pid --log-level DEBUG",
         capture=True,
         check=False,
     )
