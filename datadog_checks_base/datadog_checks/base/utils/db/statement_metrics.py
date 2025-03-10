@@ -48,16 +48,7 @@ class StatementMetrics:
         result = []
         metrics = set(metrics)
 
-        merged_rows, dropped_metrics = _merge_duplicate_rows(rows, metrics, key)
-        debug_info = {
-            'pgss_rows_before': rows,
-            'pgss_rows_after': {'-'.join((str(e) for e in k)): v for k, v in merged_rows.items()},
-            'psgg_previous_statements': {'-'.join((str(e) for e in k)): v for k, v in self._previous_statements.items()},
-        }
-
-        # Log every 6 checks
-        if self.log_counter % 6 == 0:
-            logger.info('[DBM-Incident-34888-Debug]: %s', json.dumps(debug_info))
+        merged_rows, dropped_metrics = _merge_duplicate_rows(rows, metrics, key)       
 
         self.log_counter += 1
 
@@ -96,6 +87,18 @@ class StatementMetrics:
             # No changes to the query; no metric needed
             if all(diffed_row[k] == 0 for k in metric_columns):
                 continue
+
+            if diffed_row["calls"] > 100000000:
+                debug_info = {
+                    'pgss_rows_before': rows,
+                    'pgss_rows_after': {'-'.join((str(e) for e in k)): v for k, v in merged_rows.items()},
+                    'psgg_previous_statements': {'-'.join((str(e) for e in k)): v for k, v in self._previous_statements.items()},
+                }
+                logger.info('[DBM-Incident-34888-Debug]: %s', json.dumps(debug_info))
+
+        # Log every 6 checks
+        if self.log_counter % 6 == 0:
+            logger.info('[DBM-Incident-34888-Debug]: %s', json.dumps(debug_info))
 
             result.append(diffed_row)
 
