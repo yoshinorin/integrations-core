@@ -2,6 +2,7 @@
 # All rights reserved
 # Licensed under a 3-clause BSD style license (see LICENSE)
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class StatementMetrics:
     """
 
     def __init__(self):
+        self.log_counter = 0
         self._previous_statements = {}
 
     def compute_derivative_rows(self, rows, metrics, key):
@@ -47,6 +49,19 @@ class StatementMetrics:
         metrics = set(metrics)
 
         merged_rows, dropped_metrics = _merge_duplicate_rows(rows, metrics, key)
+
+
+        debug_info = {
+            'pgss_rows_before': rows,
+            'pgss_rows_after': merged_rows,
+            'psgg_previous_statements': self._previous_statements,
+        }
+        # Log every 6 checks
+        if self.log_counter % 6 == 0:
+            logger.info('[DBM-Incident-34888-Debug]', json.dumps(debug_info))
+
+        self.log_counter += 1
+
         if dropped_metrics:
             logger.warning(
                 'Some statement metrics are not available from the table: %s', ','.join(m for m in dropped_metrics)
