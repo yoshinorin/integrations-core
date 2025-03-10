@@ -2,7 +2,7 @@
 # All rights reserved
 # Licensed under a 3-clause BSD style license (see LICENSE)
 import logging
-import json
+import simplejson as json
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class StatementMetrics:
         }
         # Log every 6 checks
         if self.log_counter % 6 == 0:
-            logger.info('[DBM-Incident-34888-Debug]', json.dumps(debug_info))
+            logger.info('[DBM-Incident-34888-Debug]: %s', json.dumps(debug_info))
 
         self.log_counter += 1
 
