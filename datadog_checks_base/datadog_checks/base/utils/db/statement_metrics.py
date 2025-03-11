@@ -96,10 +96,6 @@ class StatementMetrics:
                 }
                 logger.info('[DBM-Incident-34888-Debug]: %s', json.dumps(debug_info))
 
-        # Log every 6 checks
-        if self.log_counter % 6 == 0:
-            logger.info('[DBM-Incident-34888-Debug]: %s', json.dumps(debug_info))
-
             result.append(diffed_row)
 
         self._previous_statements.clear()
