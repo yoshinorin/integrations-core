@@ -399,6 +399,8 @@ class SQLServer(AgentCheck):
     def make_metric_list_to_collect(self):
         # Pre-process the list of metrics to collect
         try:
+            self.log.warning("Hi Allen :)")
+
             if self._config.ignore_missing_database:
                 # self.connection.check_database() will try to connect to 'master'.
                 # If this is an Azure SQL Database this function will throw.
