@@ -38,7 +38,7 @@ DEFAULT_METRICS_LEN = len(
 )
 
 
-@mock.patch('pymongo.database.Database.command', side_effect=ConnectionFailure('Service not available'))
+@mock.patch('pymongo.synchronous.database.Database.command', side_effect=ConnectionFailure('Service not available'))
 def test_emits_critical_service_check_when_service_is_not_available(mock_command, dd_run_check, aggregator):
     # Given
     check = MongoDb('mongo', {}, [{'hosts': ['localhost']}])
@@ -50,7 +50,7 @@ def test_emits_critical_service_check_when_service_is_not_available(mock_command
 
 
 @mock.patch(
-    'pymongo.database.Database.command',
+    'pymongo.synchronous.database.Database.command',
     side_effect=[
         {'host': 'test-hostname:27018'},  # serverStatus
         {'parsed': {}},  # getCmdLineOpts
@@ -72,7 +72,7 @@ def test_emits_ok_service_check_when_service_is_available(
 
 
 @mock.patch(
-    'pymongo.database.Database.command',
+    'pymongo.synchronous.database.Database.command',
     side_effect=[
         {'host': 'test-hostname:27018'},  # serverStatus
         {'parsed': {}},  # getCmdLineOpts
@@ -95,7 +95,7 @@ def test_emits_ok_service_check_each_run_when_service_is_available(
 
 
 @mock.patch(
-    'pymongo.database.Database.command',
+    'pymongo.synchronous.database.Database.command',
     side_effect=[
         {'host': 'test-hostname'},  # serverStatus
         {'parsed': {}},  # getCmdLineOpts
@@ -127,7 +127,7 @@ def test_version_metadata(
 
 
 @mock.patch(
-    'pymongo.database.Database.command',
+    'pymongo.synchronous.database.Database.command',
     side_effect=[
         {'host': 'test-hostname'},  # serverStatus
         Exception('getCmdLineOpts exception'),  # getCmdLineOpts
@@ -154,7 +154,7 @@ def test_emits_ok_service_check_when_alibaba_mongos_deployment(
 
 
 @mock.patch(
-    'pymongo.database.Database.command',
+    'pymongo.synchronous.database.Database.command',
     side_effect=[
         {'host': 'test-hostname'},  # serverStatus
         Exception('getCmdLineOpts exception'),  # getCmdLineOpts
@@ -187,7 +187,7 @@ def test_emits_ok_service_check_when_alibaba_replicaset_role_configsvr_deploymen
 
 
 @mock.patch(
-    'pymongo.database.Database.command',
+    'pymongo.synchronous.database.Database.command',
     side_effect=[
         {'host': 'test-hostname'},  # serverStatus
         Exception('getCmdLineOpts exception'),  # getCmdLineOpts

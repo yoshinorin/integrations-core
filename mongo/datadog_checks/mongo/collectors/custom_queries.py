@@ -165,7 +165,7 @@ class CustomQueriesCollector(MongoCollector):
             return
 
         cursor = pymongo.synchronous.command_cursor.CommandCursor(
-            pymongo.collection.Collection(db, collection_name), result['cursor'], None
+            pymongo.synchronous.collection.Collection(db, collection_name), result['cursor'], None
         )
         empty_result_set = True
 
