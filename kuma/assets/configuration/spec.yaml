@@ -7,4 +7,8 @@ files:
     - template: init_config/default
   - template: instances
     options:
-    - template: instances/default
+    - template: instances/openmetrics
+      overrides:
+        openmetrics_endpoint.value.example: http://localhost:5680/metrics
+        openmetrics_endpoint.description: |
+          Set this to the endpoint that Kuma exposes.
