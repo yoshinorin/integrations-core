@@ -57,11 +57,6 @@ else:
 
 init_logging()
 
-if datadog_agent.get_config('disable_unsafe_yaml'):
-    from ..ddyaml import monkey_patch_pyyaml
-
-    monkey_patch_pyyaml()
-
 if datadog_agent.get_config('integration_tracing'):
     from ddtrace import patch
 
