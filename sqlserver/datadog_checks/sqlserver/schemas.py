@@ -9,6 +9,7 @@ except ImportError:
 
 import json
 import time
+import re
 
 from datadog_checks.base import is_affirmative
 from datadog_checks.base.utils.db.utils import DBMAsyncJob, default_json_event_encoding
@@ -166,6 +167,9 @@ class Schemas(DBMAsyncJob):
     def _fetch_schema_data(self, cursor, start_time, db_name):
         schemas = self._query_schema_information(cursor)
         for schema in schemas:
+            if not self._should_collect_metadata(schema, "schema"):
+                continue
+
             tables = self._get_tables(schema, cursor)
             tables_chunks = list(get_list_chunks(tables, self.TABLES_CHUNK_SIZE))
             for tables_chunk in tables_chunks:
@@ -195,6 +199,9 @@ class Schemas(DBMAsyncJob):
                 try:
                     for db_name in databases:
                         try:
+                            if not self._should_collect_metadata(db_name, "database"):
+                                continue
+
                             if not is_azure_sql_database(engine_edition):
                                 cursor.execute(SWITCH_DB_STATEMENT.format(db_name))
                             self._fetch_schema_data(cursor, start_time, db_name)
@@ -293,7 +300,7 @@ class Schemas(DBMAsyncJob):
         "name": str
         "columns": []
         """
-        tables_info = execute_query(TABLES_IN_SCHEMA_QUERY, cursor, convert_results_to_str=True, parameter=schema["id"])
+        tables_info = execute_query(TABLES_IN_SCHEMA_QUERY.format(filter=self._get_tables_filter()), cursor, convert_results_to_str=True, parameter=schema["id"])
         for t in tables_info:
             t.setdefault("columns", [])
         return tables_info
@@ -363,7 +370,53 @@ class Schemas(DBMAsyncJob):
         self._populate_with_foreign_keys_data(table_ids, id_to_table_data, cursor)
         self._populate_with_index_data(table_ids, id_to_table_data, cursor)
         return total_columns_number, list(id_to_table_data.values())
+    
+    def _should_collect_metadata(self, name, metadata_type):
+        for re_str in self._check._config.schema_config.get(
+            "exclude_{metadata_type}s".format(metadata_type=metadata_type), []
+        ): 
+            regex = re.compile(re_str)
+            if regex.search(name):
+                self._log.debug(
+                    "Excluding {metadata_type} {name} from metadata collection "
+                    "because of {re_str}".format(metadata_type=metadata_type, name=name, re_str=re_str)
+                )
+                return False
 
+        includes = self._check._config.schema_config.get(
+            "include_{metadata_type}s".format(metadata_type=metadata_type), []
+        )
+        if len(includes) == 0:
+            return True
+        for re_str in includes:
+            regex = re.compile(re_str)
+            if regex.search(name):
+                self._log.debug(
+                    "Including {metadata_type} {name} in metadata collection "
+                    "because of {re_str}".format(metadata_type=metadata_type, name=name, re_str=re_str)
+                )
+                return True
+        return False
+
+    def _get_tables_filter(self):
+        includes = self._check._config.schema_config.get("include_tables", [])
+        excludes = self._check._config.schema_config.get("exclude_tables", [])
+        if len(includes) == 0 and len(excludes) == 0:
+            return ""
+
+        sql = ""
+        if len(includes) > 0:
+            sql += " AND ("
+            sql += " OR ".join("name LIKE '{r}'".format(r=r.replace("'", "''")) for r in includes)
+            sql += ")"
+
+        if len(excludes) > 0:
+            sql += " AND NOT ("
+            sql += " OR ".join("name LIKE '{r}'".format(r=r.replace("'", "''")) for r in excludes)
+            sql += ")"
+
+        return sql
+    
     @tracked_method(agent_check_getter=agent_check_getter)
     def _populate_with_columns_data(self, table_ids, name_to_id, id_to_table_data, schema, cursor):
         cursor.execute(COLUMN_QUERY.format(table_ids, schema["name"]))

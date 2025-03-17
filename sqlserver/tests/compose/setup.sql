@@ -77,6 +77,16 @@ CREATE TABLE datadog_test_schemas.test_schema.RestaurantReviews (
 );
 GO
 
+-- Create some tables following a name pattern
+CREATE TABLE datadog_test_schemas.test_schema.Chef1 (id INT NOT NULL DEFAULT 0); 
+GO 
+CREATE TABLE datadog_test_schemas.test_schema.Chef2 (id INT NOT NULL DEFAULT 0);
+GO 
+CREATE TABLE datadog_test_schemas.test_schema.Chef3 (id INT NOT NULL DEFAULT 0); 
+GO 
+CREATE TABLE datadog_test_schemas.test_schema.Chef4 (id INT NOT NULL DEFAULT 0); 
+GO 
+
 -- Create second test database for integration schema tests
 CREATE DATABASE datadog_test_schemas_second;
 GO

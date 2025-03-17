@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import logging
 import re
 from copy import copy
+from typing import Dict, List, NamedTuple, TypedDict
 
 import pytest
 
@@ -335,7 +336,7 @@ def test_collect_schemas(aggregator, dd_run_check, dbm_instance):
     dbm_instance['database_autodiscovery'] = True
     dbm_instance['autodiscovery_include'] = ['datadog_test_schemas', 'datadog_test_schemas_second']
     dbm_instance['dbm'] = True
-    dbm_instance['schemas_collection'] = {"enabled": True}
+    dbm_instance['schemas_collection'] = {"enabled": True, "exclude_tables": ["Chef%"]}
 
     check = SQLServer(CHECK_NAME, {}, [dbm_instance])
     dd_run_check(check)
@@ -372,6 +373,219 @@ def test_collect_schemas(aggregator, dd_run_check, dbm_instance):
         normalize_indexes_columns(actual_payload)
         assert deep_compare(actual_payload, expected_data_for_db[db_name])
 
+def test_collect_schemas_filters(aggregator, dd_run_check, dbm_instance):
+    # Test cases are: [config, expected_included_tables, expected_excluded_tables]dDict
+    class SchemaFilterTestCase(TypedDict):
+        filters: dict
+        included: List[str]
+        excluded: List[str]
+
+    test_cases: Dict[str, SchemaFilterTestCase] = {
+        "test_case_1": {
+            "config": {'include_databases': ['.*'], 'include_tables': ['%']},
+            "included": [
+                'cities', 
+                'landmarks', 
+                'RestaurantReviews', 
+                'Restaurants',
+                'Chef1',
+                'Chef2',
+                'Chef3',
+                'Chef4',
+            ],
+            "excluded": [],
+        },
+        "test_case_2": {
+            "config": {'exclude_tables': ['Restaurant%']},
+            "included": [
+                'cities', 
+                'landmarks',
+                'Chef1',
+                'Chef2',
+                'Chef3',
+                'Chef4',
+            ],
+            "excluded": [
+                'RestaurantReviews', 
+                'Restaurants',
+            ],
+        },
+        "test_case_3": {
+            "config": {'include_tables': ['Restaurant%'], 'exclude_tables': ['Restaurant%']},
+            "included": [],
+            "excluded": [
+                'cities', 
+                'landmarks',
+                'RestaurantReviews', 
+                'Restaurants',
+                'Chef1',
+                'Chef2',
+                'Chef3',
+                'Chef4',
+            ],
+        },
+        "test_case_4": {
+            "config": {'include_tables': ['Restaurant%', "cities"]},
+            "included": [
+                'RestaurantReviews', 
+                'Restaurants',
+                'cities',
+            ],
+            "excluded": [
+                "landmarks",
+                'Chef1',
+                'Chef2',
+                'Chef3',
+                'Chef4',
+            ],
+        },
+        "test_case_5": {
+            "config": {'exclude_tables': ['Chef%', "cities"]},
+            "included": [
+                "landmarks",
+                'RestaurantReviews', 
+                'Restaurants',
+            ],
+            "excluded": [
+                'cities',
+                'Chef1',
+                'Chef2',
+                'Chef3',
+                'Chef4',
+            ],
+        },
+        "test_case_6": {
+            "config": {'include_tables': ['Chef[2-4]', "cities", "Restaurant%"], 'exclude_tables': ['Chef3', "landmarks"]},
+            "included": [
+                "cities",
+                "Chef2",
+                "Chef4",
+                'RestaurantReviews', 
+                'Restaurants',
+            ],
+            "excluded": [
+                "Chef1",
+                "Chef3",
+                "landmarks",
+            ],
+        },
+        "test_case_7": {
+            "config": {'include_databases': ['.*'], 'exclude_schemas': ['test_.*'], 'include_tables': ['%']},
+            "included": [],
+            "excluded": [
+                'cities', 
+                'landmarks', 
+                'RestaurantReviews', 
+                'Restaurants',
+                'Chef1',
+                'Chef2',
+                'Chef3',
+                'Chef4',
+            ],
+        },
+    }
+
+
+    dbm_instance['database_autodiscovery'] = True
+    dbm_instance['autodiscovery_include'] = ['datadog_test_schemas', 'datadog_test_schemas_second']
+    dbm_instance['dbm'] = True
+    # dbm_instance['schemas_collection'] = {"enabled": True}
+
+    # dbm_metadata = aggregator.get_event_platform_events("dbm-metadata")
+    
+
+    i = 0
+    for tc in test_cases.values():
+        i += 1
+        exclude_schemas = tc["config"].get("exclude_schemas", [])
+        exclude_schemas.append("dbo")
+        schemas_config =  {"enabled": True, "exclude_schemas":exclude_schemas}
+        schemas_config.update(tc["config"])
+        dbm_instance['schemas_collection'] =  schemas_config
+
+        check = SQLServer(CHECK_NAME, {}, [dbm_instance])
+        dd_run_check(check)
+
+        dbm_metadata = aggregator.get_event_platform_events("dbm-metadata")
+
+
+        tables_got = []
+        # Check that all of `include_tables` is in the return and none of `exclude_tables`
+        for schema_event in (e for e in dbm_metadata if e['kind'] == 'sqlserver_databases'):    
+            assert schema_event.get("timestamp") is not None
+            assert schema_event["host"] == "stubbed.hostname"
+            assert schema_event["agent_version"] == "0.0.0"
+            assert schema_event["dbms"] == "sqlserver"
+            assert schema_event.get("collection_interval") is not None
+            assert schema_event.get("dbms_version") is not None
+
+            database_metadata = schema_event['metadata']
+            assert len(database_metadata) == 1
+            db_name = database_metadata[0]['name']
+
+            schema = database_metadata[0]['schemas'][0]
+            schema_name = schema['name']
+            assert schema_name in ['test_schema']
+
+            for table in schema['tables']:
+                tables_got.append(table['name'])
+
+        for table in tables_got:
+            assert_fields(tables_got, tc["included"])
+            assert_not_fields(tables_got, tc["excluded"])
+
+        aggregator.reset()
+
+def test_get_table_filter(dbm_instance):
+    test_cases = [
+        [{'include_tables': ['cats']}, " AND (name LIKE 'cats')"],
+        [{'exclude_tables': ['dogs']}, " AND NOT (name LIKE 'dogs')"],
+        [
+            {'include_tables': ['cats', "'people'"], 'exclude_tables': ['dogs', 'iguanas']},
+            " AND (name LIKE 'cats' OR name LIKE '''people''')"
+            " AND NOT (name LIKE 'dogs' OR name LIKE 'iguanas')",
+        ]
+    ]
+
+    for tc in test_cases:
+        dbm_instance['schemas_collection'] = tc[0]
+        check = SQLServer(CHECK_NAME, {}, [dbm_instance])
+        
+
+        metadata = check._schemas
+        filter = metadata._get_tables_filter()
+        
+        assert filter == tc[1]
+
+# def test_should_collect_metadata(integration_check, dbm_instance):
+#     test_cases = [
+#         [{'include_databases': ['d%']}, "db", "database", True],
+#         [{'include_databases': ['d%']}, "db", "database", True],
+#         [{'include_databases': ['c%'], 'include_schemas': ['d%']}, "db", "database", False],
+#         [{'include_databases': ['d%'], 'exclude_schemas': ['d%']}, "db", "database", True],
+#         [{'exclude_databases': ['c%']}, "db", "database", True],
+#         [{'exclude_databases': ['d%']}, "db", "database", False],
+#         [{'include_databases': ['d%'], 'exclude_databases': ['c%']}, "db", "database", True],
+#         [{'include_databases': ['c%'], 'exclude_databases': ['c%']}, "db", "database", False],
+#         [{'include_databases': ['d%'], 'exclude_databases': ['b$']}, "db", "database", False],
+#         [{'include_databases': ['c%']}, "sch", "schema", True],
+#         [{'exclude_databases': ['sc%']}, "sch", "schema", True],
+#         [{'include_schemas': ['p%']}, "public", "schema", True],
+#         [{'include_schemas': ['x%']}, "public", "schema", False],
+#         [{'exclude_schemas': ['z%']}, "public", "schema", True],
+#         [{'exclude_schemas': ['l%']}, "public", "schema", False],
+#         [{'include_schemas': ['p%'], 'exclude_schemas': ['z%']}, "public", "schema", True],
+#         [{'include_schemas': ['z%'], 'exclude_schemas': ['c$']}, "public", "schema", False],
+#         [{'include_schemas': ['p%'], 'exclude_schemas': ['b%']}, "public", "schema", False],
+#     ]
+#     for tc in test_cases:
+#         dbm_instance['schemas_collection'] = tc[0]
+#         check = SQLServer(CHECK_NAME, {}, [dbm_instance])
+#         dd_run_check(check)
+#         metadata = check.metadata_samples
+
+#         assert metadata._should_collect_metadata(tc[1], tc[2]) == tc[3], tc
+
 
 @pytest.mark.flaky
 def test_schemas_collection_truncated(aggregator, dd_run_check, dbm_instance):
@@ -391,3 +605,10 @@ def test_schemas_collection_truncated(aggregator, dd_run_check, dbm_instance):
             ):
                 found = True
     assert found
+
+def assert_fields(keys: List[str], fields: List[str]):
+    for field in fields:
+        assert field in keys
+def assert_not_fields(keys: List[str], fields: List[str]):
+    for field in fields:
+        assert field not in keys

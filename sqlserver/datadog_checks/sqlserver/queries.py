@@ -165,6 +165,7 @@ SELECT
 FROM
     sys.tables
 WHERE schema_id=?
+{filter}
 """
 
 COLUMN_QUERY = """

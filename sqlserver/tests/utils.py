@@ -2,6 +2,7 @@
 # All rights reserved
 # Licensed under a 3-clause BSD style license (see LICENSE)
 import os
+import re
 import string
 import threading
 from copy import copy
@@ -256,3 +257,42 @@ def deep_compare(obj1, obj2):
         return all(any(deep_compare(item1, item2) for item2 in obj2) for item1 in obj1)
     else:
         return obj1 == obj2
+
+# def regex_to_sqlserver_like(pattern: str) -> str:
+#     """
+#     Converts a basic regex pattern to an equivalent SQL Server LIKE pattern.
+
+#     Supported conversions:
+#       - `.*`  -> `%`  (match any sequence of characters)
+#       - `.`   -> `_`  (match a single character)
+#       - `[abc]` -> `[abc]` (same in SQL LIKE)
+#       - `[^abc]` -> `[!abc]` (SQL Server uses `!` for negation)
+#       - Escape `%` and `_` if they appear in the input regex
+    
+#     Note: Does not support complex regex constructs like `\d`, `\w`, `|`, or `{min,max}`.
+#     """
+#     # Escape SQL wildcards if they appear literally in the input regex
+#     pattern = pattern.replace('%', r'\%').replace('_', r'\_')
+
+#     # Convert `.*` to `%`
+#     pattern = re.sub(r'\.\*', '%', pattern)
+
+#     # Convert `.` to `_` (match exactly one character)
+#     pattern = pattern.replace('.', '_')
+
+#     # Convert `[^...]` (negated character set) to `[!... ]`
+#     pattern = re.sub(r'\[\^([^\]]+)\]', r'[!\1]', pattern)
+
+#     return pattern
+
+# # Example usage:
+# regex_patterns = [
+#     ".*",            # Should become "%"
+#     "table.*",       # Should become "table%"
+#     "col[1-9]",      # Should remain "col[1-9]"
+#     "col[^1-9]",     # Should become "col[!1-9]"
+#     "_.data",        # Should become "_data"
+# ]
+
+# for regex in regex_patterns:
+#     print(f"Regex: {regex}  ->  SQL LIKE: {regex_to_sqlserver_like(regex)}")

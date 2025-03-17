@@ -35,4 +35,4 @@ then
 else
     echo "ERROR: setup.sql failed."
     exit 1
-fi
+fi 
